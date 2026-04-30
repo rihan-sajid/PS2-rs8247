@@ -74,13 +74,10 @@ for func, name in functions:
         f_val = func(x_fine)
         
         l2 = np.sqrt(np.mean((g_x - f_val)**2))
-        max_err = np.max(np.abs(g_x - f_val))
         
         l2_errors.append(l2)
-        max_errors.append(max_err)
     
     ax2.loglog(p_vals, l2_errors, label=f"L2 - {name}")
-    ax2.loglog(p_vals, max_errors, '--', label=f"Max - {name}")
 
 ax2.set_xlabel("Degree p")
 ax2.set_ylabel("Error")
