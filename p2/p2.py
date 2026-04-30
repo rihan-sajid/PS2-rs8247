@@ -30,7 +30,7 @@ c = 1 / np.sqrt(2)
 
 configs = {
     "a": (lambda x: x**8, 2/9, -1, 1, 10, "h^{10}"),
-    "b": (lambda x: np.abs(x - c)**3, ((1+c)**4 + (1-c)**4)/4, -1, 1, 4, "h^4"),
+    "b": (lambda x: np.abs(x - c)**3, ((1+c)**4 + (1-c)**4)/4, -1, 1, 3, "h^3"),
     "c": (lambda x: np.where(x > c, 1, 0), 1 - c, -1, 1, 1, "h^1"),
     "d": (lambda x: 1/np.sqrt(np.where(x == 0, 1e-15, x)), 2.0, 0, 1, 0.5, "h^{0.5}")
 }
