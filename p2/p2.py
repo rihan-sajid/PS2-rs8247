@@ -1,67 +1,59 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def gaussian_5pt_integrate(f, a, b, N):
-    # 5-point Gauss-Legendre weights and nodes on [-1, 1]
-    nodes = np.array([
-        -0.9061798459386640, -0.5384693101056831, 0.0,
-        0.5384693101056831, 0.9061798459386640
-    ])
-    weights = np.array([
-        0.2369268850561891, 0.4786286704993665, 0.5688888888888889,
-        0.4786286704993665, 0.2369268850561891
-    ])
+def gaussian_5pt_integrate(f, N, a, b):
+    """Composite 5-point Gaussian Quadrature."""
+    # Standard 5-point Gauss-Legendre weights and nodes for [-1, 1]
+    nodes, weights = np.polynomial.legendre.leggauss(5)
     
     edges = np.linspace(a, b, N + 1)
-    total_integral = 0
+    total_integral = 0.0
     
     for i in range(N):
-        x_left, x_right = edges[i], edges[i+1]
-        mid = (x_left + x_right) / 2
-        half_width = (x_right - x_left) / 2
+        a_j, b_j = edges[i], edges[i+1]
+        mid = (a_j + b_j) / 2.0
+        half_width = (b_j - a_j) / 2.0
         
-        # Map nodes to the current interval
-        x_mapped = mid + half_width * nodes
-        total_integral += half_width * np.sum(weights * f(x_mapped))
+        # Map nodes from [-1, 1] to the local sub-interval [a_j, b_j]
+        mapped_nodes = mid + half_width * nodes
+        total_integral += half_width * np.sum(weights * f(mapped_nodes))
         
     return total_integral
 
-# --- Problem Definitions ---
+# Define the functions and analytical solutions
 c = 1 / np.sqrt(2)
-functions = [
-    {'f': lambda x: x**8, 'range': (-1, 1), 'exact': 2/9, 'label': 'x^8', 'slope': 10},
-    {'f': lambda x: np.abs(x - c)**3, 'range': (-1, 1), 'exact': ( (1-c)**4 + (1+c)**4 ) / 4, 'label': '|x-c|^3', 'slope': 4},
-    {'f': lambda x: np.where(x > c, 1.0, 0.0), 'range': (-1, 1), 'exact': 1 - c, 'label': 'H(x-c)', 'slope': 1},
-    {'f': lambda x: 1/np.sqrt(x + 1e-15), 'range': (0, 1), 'exact': 2.0, 'label': '1/sqrt(x)', 'slope': 0.5}
-]
 
-N_vals = np.logspace(1, 5, 10, dtype=int)
-L = 2 # Interval length for (a,b,c), adjusted for (d) in loop
-plt.figure(figsize=(10, 6))
+# (a) x^8 on [-1, 1] -> Exact integral = 2/9
+# (b) |x - c|^3 on [-1, 1] -> Exact integral = ((1+c)^4 + (1-c)^4)/4
+# (c) H(x - c) on [-1, 1] -> Exact integral = 1 - c
+# (d) 1/sqrt(x) on [0, 1] -> Exact integral = 2.0
 
-for entry in functions:
-    errors = []
-    h_vals = []
-    f, a, b, exact, label = entry['f'], entry['range'][0], entry['range'][1], entry['exact'], entry['label']
-    
-    for N in N_vals:
-        approx = gaussian_5pt_integrate(f, a, b, N)
-        h = (b - a) / N
-        rel_error = np.abs(approx - exact) / np.abs(exact)
-        if rel_error > 1e-15: # Ignore noise below precision
-            errors.append(rel_error)
-            h_vals.append(h)
-    
-    plt.loglog(h_vals, errors, 'o-', label=f"Error: {label}")
-    
-    # Power law reference line
-    h_ref = np.array(h_vals)
-    y_ref = (h_ref**entry['slope']) * (errors[0] / h_ref[0]**entry['slope'])
-    plt.loglog(h_ref, y_ref, '--', alpha=0.6, label=f"Ref: h^{entry['slope']}")
+configs = {
+    "a": (lambda x: x**8, 2/9, -1, 1, 10, "h^{10}"),
+    "b": (lambda x: np.abs(x - c)**3, ((1+c)**4 + (1-c)**4)/4, -1, 1, 4, "h^4"),
+    "c": (lambda x: np.where(x > c, 1, 0), 1 - c, -1, 1, 1, "h^1"),
+    "d": (lambda x: 1/np.sqrt(np.where(x == 0, 1e-15, x)), 2.0, 0, 1, 0.5, "h^{0.5}")
+}
 
-plt.xlabel('h = (b-a)/N')
-plt.ylabel('Relative Error')
-plt.title('Convergence of 5-point Composite Gaussian Quadrature')
-plt.legend()
-plt.grid(True, which="both", ls="-", alpha=0.5)
-plt.savefig("p2\convergence_plots.png")
+N_vals = np.logspace(1, 4.5, 15, dtype=int)
+plt.figure(figsize=(12, 10))
+
+for i, (key, (f, exact, a, b, p, p_lab)) in enumerate(configs.items()):
+    h_vals = (b - a) / N_vals
+    errors = [np.abs((gaussian_5pt_integrate(f, N, a, b) - exact) / exact) for N in N_vals]
+    
+    plt.subplot(2, 2, i+1)
+    plt.loglog(h_vals, errors, 'o-', label=f"Function ({key}) Error")
+    
+    # Reference trend line
+    ref_y = h_vals**p * (errors[0] / h_vals[0]**p)
+    plt.loglog(h_vals, ref_y, 'k--', alpha=0.7, label=f"Ref: ${p_lab}$")
+    
+    plt.xlabel('$h = (b-a)/N$')
+    plt.ylabel('Relative Error')
+    plt.title(f'Convergence for Function ({key})')
+    plt.legend()
+    plt.grid(True, which="both", alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('p2/integration_errors.png')
