@@ -46,9 +46,13 @@ for i, (key, (f, exact, a, b, p, p_lab)) in enumerate(configs.items()):
     plt.loglog(h_vals, errors, 'o-', label=f"Function ({key}) Error")
     
     # Reference trend line
-    ref_y = h_vals**p * (errors[0] / h_vals[0]**p)
-    plt.loglog(h_vals, ref_y, 'k--', alpha=0.7, label=f"Ref: ${p_lab}$")
+    if key != "a":
+        ref_y = h_vals**p * (errors[0] / h_vals[0]**p)
+        plt.loglog(h_vals, ref_y, 'k--', alpha=0.7, label=f"Ref: ${p_lab}$")
     
+    if key == "a":
+        plt.ylim(1e-28, 1e-13)
+
     plt.xlabel('$h = (b-a)/N$')
     plt.ylabel('Relative Error')
     plt.title(f'Convergence for Function ({key})')
