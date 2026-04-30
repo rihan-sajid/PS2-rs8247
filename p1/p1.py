@@ -27,9 +27,9 @@ f_b = lambda x: np.abs(x)
 f_c = lambda x: np.where(x >= 0.25, 1.0, 0.0)
 
 functions = [
-    (f_a, "f(x) = 1/(1+25x^2)"),
-    (f_b, "f(x) = |x|"),
-    (f_c, "f(x) = H(x - 0.25)")
+    (f_a, "f(x) = 1/(1+25x^2)", None),
+    (f_b, "f(x) = |x|", 1),
+    (f_c, "f(x) = H(x - 0.25)", 0.5)
 ]
 
 # Evaluation grid
@@ -40,7 +40,7 @@ degrees = [10, 20, 40]
 # --- Figure 1: Interpolation Plots ---
 fig1, axes = plt.subplots(3, 1, figsize=(10, 15))
 
-for idx, (func, name) in enumerate(functions):
+for idx, (func, name, err_line) in enumerate(functions):
     ax = axes[idx]
     ax.plot(x_fine, func(x_fine), 'k--', label="Actual f(x)", alpha=0.5)
     
@@ -63,7 +63,7 @@ plt.savefig("p1\interpolation_plots.png")
 fig2, ax2 = plt.subplots(figsize=(10, 7))
 p_vals = np.unique(np.logspace(0, 8, num=15, base=2).astype(int)) # p from 1 to 256
 
-for func, name in functions:
+for func, name, err_line in functions:
     l2_errors = []
     max_errors = []
     
@@ -74,10 +74,18 @@ for func, name in functions:
         f_val = func(x_fine)
         
         l2 = np.sqrt(np.mean((g_x - f_val)**2))
+        max_err = np.max(np.abs(g_x - f_val))
         
         l2_errors.append(l2)
-    
+        max_errors.append(max_err)
+
     ax2.loglog(p_vals, l2_errors, label=f"L2 - {name}")
+    ax2.loglog(p_vals, max_errors, ':', label=f"Max - {name}")
+
+    if err_line is not None:
+        pf = p_vals.astype(float)
+        ref_y = pf**(-err_line) * (l2_errors[0] / pf[0]**(-err_line))
+        ax2.loglog(p_vals, ref_y, 'k--', alpha=0.7, label=f"Ref: $p^{{-{err_line}}}$")
 
 ax2.set_xlabel("Degree p")
 ax2.set_ylabel("Error")
